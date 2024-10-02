@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>시간 맞추기</title>
+<style>
+
+@font-face {
+    font-family: 'Pretendard-Regular';
+    src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;}
+
+
+@font-face {
+    font-family: 'Pretendard-Bold';
+    src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Bold.woff') format('woff');
+    font-weight: 700;
+    font-style: normal;}
+    
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    color: white;
+    font-family: 'Pretendard-Regular'; font-weight: 400;
+    transition: background-color 0.5s;
+    background-color: #FFBAAC;
+    overflow: hidden;
+}
+.clock-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.clock {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    border: 4px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 40px 0;
+    top: 43%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.hand {
+    position: absolute;
+    background-color: white;
+    transition: background-color 0.3s;
+    transform-origin: bottom;
+    bottom: 45%;
+}
+#hourHand {
+    width: 10px;
+    height: 35%;
+    border-radius: 5px;
+    z-index: 2;
+}
+#minuteHand {
+    width: 5px;
+    height: 45%;
+    border-radius: 2px;
+}
+.greeting {
+    position: absolute;
+    color: black;
+    font-size: 9em;
+    top: 0%;
+    left: 0;
+    transform: translate(0, 0);
+    display: none;
+    z-index: -1;
+    text-align: left;
+    width: 100%;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+    word-break: break-all;
+}
+.greeting span {
+    display: inline;
+    margin: 0 5px;
+}
+.tt{position: absolute; top:-8%; left: 50%; transform: translateX(-50%); z-index: 3; font-size: 1.2em}
+.rr{position: absolute; right: -20%; top: 50%; transform: translateY(-50%); font-size: 1.2em}
+.bb{position: absolute; bottom: -8%; left: 50%; transform: translateX(-50%); font-size: 1.2em}
+.ll{position: absolute; left: -20%; top: 50%; transform: translateY(-50%); font-size: 1.2em}
+#currentTime {
+    font-size: 2em;
+    color: white;
+    position: absolute;
+    top: 6%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+}
+#setCurrentTime {
+    position: absolute;
+    top: 84%;
+    padding: 2px 10px;
+    font-size: 1.2em;
+    cursor: pointer;
+    border-radius: 0px;
+    border: none;
+    background-color: lightgrey;
+    color: black;
+    box-shadow: 3px 3px 0px rgba(170, 170, 170, 1);
+}
+
+
+</style>
+</head>
+<body>
+<div class="clock-container">
+    <div id="currentTime"></div>
+    <div class="greeting" id="centerText">
+        점심 맛있게 드세요! / Bon appétit! / ¡Buen provecho! / Guten Appetit! / Buon appetito! / Selamat makan! / 吃饭好！(Chīfàn hǎo!) / Приятного аппетита! / सुप्रभात! (Suprabhat!) / อิ่มอร่อย! (Im aroi!) / Masarap!
+    </div>
+    <div class="clock">
+        <div id="hourHand" class="hand"></div>
+        <div id="minuteHand" class="hand"></div>
+        <div class="tt">점심 인사</div>
+        <div class="rr">오후 인사</div>
+        <div class="bb">저녁 인사</div>
+        <div class="ll">아침 인사</div>
+    </div>
+    <button id="setCurrentTime">현재 시간 맞춰보기</button>
+    <div id="result"></div>
+</div>
+
+<script>
+const hourHand = document.getElementById('hourHand');
+const minuteHand = document.getElementById('minuteHand');
+const body = document.body;
+const centerText = document.getElementById('centerText');
+const currentTimeDisplay = document.getElementById('currentTime');
+const setCurrentTimeBtn = document.getElementById('setCurrentTime');
+const resultDisplay = document.getElementById('result');
+let draggingHour = false;
+let draggingMinute = false;
+let isStopped = false;
+let currentHours = 0;
+let autoRotateInterval;
+
+hourHand.onmousedown = function() {
+    draggingHour = true;
+};
+
+minuteHand.onmousedown = function() {
+    draggingMinute = true;
+};
+
+document.onmouseup = function() {
+    draggingHour = false;
+    draggingMinute = false;
+};
+
+document.onmousemove = function(event) {
+    const rect = hourHand.parentNode.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const angle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
+    if (draggingHour) {
+        currentHours = ((angle * (12 / (2 * Math.PI))) + 3 + 12) % 12;
+        hourHand.style.transform = `rotate(${currentHours * 30}deg)`;
+        updateBackgroundColor(currentHours);
+        updateGreeting(currentHours);
+    }
+};
+
+function getTime() {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+    const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    const decimalTime = hours % 12 + minutes / 60;
+    return { formattedTime, decimalTime };
+}
+
+function updateTime() {
+    const { formattedTime } = getTime();
+    currentTimeDisplay.textContent = formattedTime;
+}
+
+function autoRotateHourHand() {
+    currentHours = (currentHours + 1/120) % 12;  // 1/120 = 5분에 1도
+    hourHand.style.transform = `rotate(${currentHours * 30}deg)`;
+    updateBackgroundColor(currentHours);
+    updateGreeting(currentHours);
+}
+
+setInterval(updateTime, 1000);
+autoRotateInterval = setInterval(autoRotateHourHand, 10);  // 5분에 1도, 2.5초마다 업데이트
+
+function updateBackgroundColor(hours) {
+    if (hours >= 10.17 && hours < 12 || hours >= 0 && hours < 1) {
+        body.style.backgroundColor = '#75CCFF';
+    } else if (hours >= 1.5 && hours < 4.5) {
+        body.style.backgroundColor = '#F39784';
+    } else if (hours >= 4.5 && hours < 7.5) {
+        body.style.backgroundColor = '#3154AE';
+    } else if (hours >= 7.5 && hours < 10.5) {
+        body.style.backgroundColor = '#FFFAE3';
+    }
+    else if (hours >= 0 && hours < 1.5) {
+        body.style.backgroundColor = '#75CCFF';
+    }
+}
+
+function updateGreeting(hours) {
+    if (hours >= 10.5 || hours < 1.5) {
+        centerText.innerHTML = "점심 맛있게 드세요! / Bon appétit! / ¡Buen provecho! / Guten Appetit! / Buon appetito! / Selamat makan! / 吃饭好！(Chīfàn hǎo!) / Приятного аппетита! / सुप्रभात! (Suprabhat!) / อิ่มอร่อย! (Im aroi!) / Masarap!";
+        centerText.style.display = 'block';
+    } else if (hours >= 1.5 && hours < 4.5) {
+        centerText.innerHTML = "좋은 오후입니다! / Bon après-midi ! / ¡Buena tarde! / Guten Nachmittag! / Buon pomeriggio! / Selamat sore! / 下午好！(Xiàwǔ hǎo!) / Добрый день! / सुप्रभात! (Suprabhat!) / สวัสดีตอนบ่าย! (Sawadee ton bai!) / Magandang hapon!";
+        centerText.style.display = 'block';
+    } else if (hours >= 4.5 && hours < 7.5) {
+        centerText.innerHTML = "좋은 저녁입니다! / Bonsoir! / Buenas tardes! / Guten Abend! / Buona sera! / Selamat malam! / 晚上好！(Wǎnshàng hǎo!) / Добрый вечер! / शुभ संध्या! / สวัสดีตอนเย็น! / Magandang gabi!";
+        centerText.style.display = 'block';
+    } else if (hours >= 7.5 && hours < 10.5) {
+        centerText.innerHTML = "좋은 아침입니다! / Bonjour! / Buenos Días! / Guten Morgen! / Buongiorno! / Selamat Pagi! / 早上好！ / Доброе утро! / शुभ प्रभात! / Sawasdee Krub! / Magandang Umaga! / Shalom! / Aloha! / Xin chào!";
+        centerText.style.display = 'block';
+    } else {
+        centerText.style.display = 'none';
+    }
+}
+
+setCurrentTimeBtn.addEventListener('click', function() {
+    if (isStopped) {
+        isStopped = false;
+        this.textContent = '현재 시간 맞춰보기';
+        resultDisplay.textContent = '';
+        autoRotateInterval = setInterval(autoRotateHourHand, 10);
+    } else {
+        isStopped = true;
+        this.textContent = '다시 시작';
+        clearInterval(autoRotateInterval);
+        const { decimalTime } = getTime();
+        const difference = Math.abs(decimalTime - currentHours);
+        if (difference <= 0.3 || difference >= 11.7) {
+            alert('정답입니다!');
+        } else {
+            alert('다시 시도해보세요.');
+        }
+    }
+});
+
+updateTime();
+updateBackgroundColor(currentHours);
+updateGreeting(currentHours);
+</script>
+</body>
+</html>

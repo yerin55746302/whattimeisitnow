@@ -192,14 +192,14 @@ function updateTime() {
 }
 
 function autoRotateHourHand() {
-    currentHours = (currentHours + 1/120) % 12;  // 1/120 = 5분에 1도
+    currentHours = (currentHours + 1/120) % 12;  
     hourHand.style.transform = `rotate(${currentHours * 30}deg)`;
     updateBackgroundColor(currentHours);
     updateGreeting(currentHours);
 }
 
 setInterval(updateTime, 1000);
-autoRotateInterval = setInterval(autoRotateHourHand, 10);  // 5분에 1도, 2.5초마다 업데이트
+autoRotateInterval = setInterval(autoRotateHourHand, 10);  
 
 function updateBackgroundColor(hours) {
     if (hours >= 10.17 && hours < 12 || hours >= 0 && hours < 1) {
